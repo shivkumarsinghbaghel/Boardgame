@@ -4,22 +4,25 @@ import javax.sql.DataSource;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
+import org.springframework.security.core.userdetails.User;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.password.NoOpPasswordEncoder;
 import org.springframework.security.provisioning.JdbcUserDetailsManager;
+import org.springframework.security.web.SecurityFilterChain;
 
+@Configuration
 @EnableWebSecurity
-public class SecurityConfig extends WebSecurityConfigurerAdapter {
+public class SecurityConfig {
 
-    private LoggingAccessDeniedHandler accessDeniedHandler;
+    private final LoggingAccessDeniedHandler accessDeniedHandler;
 
     @Autowired
-    public void setAccessDeniedHandler(LoggingAccessDeniedHandler accessDeniedHandler) {
+    public SecurityConfig(LoggingAccessDeniedHandler accessDeniedHandler) {
         this.accessDeniedHandler = accessDeniedHandler;
     }
 
@@ -36,55 +39,66 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
     private DataSource dataSource;
 
     /**
-     * Creates a bean of type JdbcUserDetailsManager that will be used in
-     * HomeController
-     * 
-     * @return an instance configured to use our datasource
-     * @throws Exception
+     * UserDetailsManager bean for CRUD operations on users
      */
     @Bean
-    public JdbcUserDetailsManager jdbcUserDetailsManager() throws Exception {
-        // provides crud operations for users
+    public JdbcUserDetailsManager jdbcUserDetailsManager() {
         JdbcUserDetailsManager jdbcUserDetailsManager = new JdbcUserDetailsManager();
-
-        // Link up with our datasource
         jdbcUserDetailsManager.setDataSource(dataSource);
         return jdbcUserDetailsManager;
     }
 
-    @Override
-    protected void configure(HttpSecurity http) throws Exception {
-        http.authorizeRequests()
-                .antMatchers("/user/**").hasAnyRole("USER", "MANAGER") // sets up authorization
-                .antMatchers("/secured/**").hasAnyRole("USER", "MANAGER")
-                .antMatchers("/manager/**").hasRole("MANAGER")
-                .antMatchers("/h2-console/**").permitAll()
-                .antMatchers("/", "/**").permitAll() // allows access to index in templates
-                .and() // allows us to chain
-                .formLogin().loginPage("/login")
-                .defaultSuccessUrl("/secured")
-                .and()
-                .logout().invalidateHttpSession(true)
+    /**
+     * New style SecurityFilterChain (replaces WebSecurityConfigurerAdapter)
+     */
+    @Bean
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        http
+            .authorizeHttpRequests(auth -> auth
+                .requestMatchers("/user/**").hasAnyRole("USER", "MANAGER")
+                .requestMatchers("/secured/**").hasAnyRole("USER", "MANAGER")
+                .requestMatchers("/manager/**").hasRole("MANAGER")
+                .requestMatchers("/h2-console/**").permitAll()
+                .requestMatchers("/", "/**").permitAll()
+            )
+            .formLogin(form -> form
+                .loginPage("/login")
+                .defaultSuccessUrl("/secured", true)
+                .permitAll()
+            )
+            .logout(logout -> logout
+                .invalidateHttpSession(true)
                 .clearAuthentication(true)
-                .and()
-                .exceptionHandling()
-                .accessDeniedHandler(accessDeniedHandler);
+                .permitAll()
+            )
+            .exceptionHandling(ex -> ex
+                .accessDeniedHandler(accessDeniedHandler)
+            )
+            .csrf(csrf -> csrf.disable())
+            .headers(headers -> headers.frameOptions(frame -> frame.disable()));
 
-        http.csrf().disable();
-        http.headers().frameOptions().disable();
+        return http.build();
     }
 
-    @Override
-    protected void configure(AuthenticationManagerBuilder auth) throws Exception {
-
-        auth.jdbcAuthentication()
+    /**
+     * AuthenticationManager bean for JDBC auth
+     */
+    @Bean
+    public AuthenticationManager authenticationManager(HttpSecurity http) throws Exception {
+        return http.getSharedObject(AuthenticationManagerBuilder.class)
+            .jdbcAuthentication()
                 .dataSource(dataSource)
                 .withDefaultSchema()
                 .passwordEncoder(passwordEncoder)
-                .withUser("bugs")
-                .password(passwordEncoder.encode("bunny")).roles("USER")
-                .and()
-                .withUser("daffy")
-                .password(passwordEncoder.encode("duck")).roles("USER", "MANAGER");
+                .withUser(User.withUsername("bugs")
+                    .password(passwordEncoder.encode("bunny"))
+                    .roles("USER")
+                )
+                .withUser(User.withUsername("daffy")
+                    .password(passwordEncoder.encode("duck"))
+                    .roles("USER", "MANAGER")
+                )
+            .and()
+            .build();
     }
 }
