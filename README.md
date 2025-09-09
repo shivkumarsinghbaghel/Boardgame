@@ -18,7 +18,7 @@ The **users** can add board games and write reviews, while the **managers** can 
 - Maven
 - **Docker** (for building, running Jenkins, and containerizing the application)
 - **Docker Hub** (image registry)
-- **Minikube** (local Kubernetes cluster)
+- **Minikube** (local Kubernetes cluster or on AKS/EKS/GKE)
 - **SonarQube** (code quality analysis)
 - **Jenkins** (CI/CD pipeline)
 
@@ -33,7 +33,7 @@ The **users** can add board games and write reviews, while the **managers** can 
   - **Non-members:** Can only view boardgame lists and reviews
   - **Users:** Can add board games and write reviews
   - **Managers:** Can edit/delete reviews
-- Containerized with Docker and deployed on **Minikube**
+- Containerized with Docker and deployed on **Kubernets**
 - Automated CI/CD pipeline with Jenkins + Docker
 - Vulnerability scanning with **Trivy**
 - Code quality analysis with **SonarQube**
