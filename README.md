@@ -120,7 +120,7 @@ Push to Docker Hub
 
 Use kubectl to deploy to Minikube
 
-### 2️⃣ Run SonarQube
+## 2️⃣ Run SonarQube
 
 Create a network and start SonarQube:
 
@@ -132,7 +132,7 @@ docker run -d --name sonarqube \
   -e SONAR_ES_BOOTSTRAP_CHECKS_DISABLE=true \
   sonarqube:lts
 
-### 3️⃣ Jenkins Pipeline Highlights
+## 3️⃣ Jenkins Pipeline Highlights
 
 The Jenkins pipeline (Jenkinsfile) performs:
 
