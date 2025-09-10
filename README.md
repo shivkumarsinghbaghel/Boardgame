@@ -111,6 +111,7 @@ docker run -d --name jenkins \
   -v /var/run/docker.sock:/var/run/docker.sock \
   custom-jenkins:latest
 
+```
 
 This allows Jenkins to:
 
