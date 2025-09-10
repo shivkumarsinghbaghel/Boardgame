@@ -103,6 +103,8 @@ USER jenkins
 WORKDIR /var/jenkins_home
 EXPOSE 8080 50000
 
+```
+
 Run Jenkins container:
 
 docker run -d --name jenkins \
@@ -110,8 +112,6 @@ docker run -d --name jenkins \
   -v jenkins_home:/var/jenkins_home \
   -v /var/run/docker.sock:/var/run/docker.sock \
   custom-jenkins:latest
-
-```
 
 This allows Jenkins to:
 
